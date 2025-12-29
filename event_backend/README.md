@@ -1,0 +1,1 @@
+# Event Management Backend\n\nRun `npm install` then `npm run dev`.
