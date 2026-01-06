@@ -16,6 +16,18 @@ class _ExplorePageState extends State<ExplorePage> {
 
   late Future<List<EventModel>> _futureEvents;
 
+  // ✅ Category filtering (null = all)
+  String? _selectedCategory;
+
+  static const List<String> _categories = [
+    "All",
+    "music",
+    "sports",
+    "tech",
+    "art",
+    "business",
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -30,18 +42,32 @@ class _ExplorePageState extends State<ExplorePage> {
 
   List<EventModel> _filter(List<EventModel> events) {
     final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return events;
+    final selected = _selectedCategory?.toLowerCase();
 
     return events.where((e) {
-      final haystack =
-          "${e.displayTitle} ${e.location} ${e.category}".toLowerCase();
+      // ✅ Make category comparisons safe (handles nulls/spaces/case)
+      final eventCategory = (e.category).trim().toLowerCase();
+
+      if (selected != null && selected.isNotEmpty && selected != "all") {
+        if (eventCategory != selected) return false;
+      }
+
+      if (q.isEmpty) return true;
+
+      // ✅ Search across multiple fields safely
+      final haystack = [
+        e.displayTitle,
+        e.location,
+        e.category,
+        e.organizer.name,
+        ...e.tags,
+      ].join(' ').toLowerCase();
+
       return haystack.contains(q);
     }).toList();
   }
 
   String _formatDate(DateTime d) {
-    // Simple format to keep it lightweight (no intl dependency)
-    // Example: 2026-01-20 20:00
     final local = d.toLocal();
     final y = local.year.toString().padLeft(4, '0');
     final m = local.month.toString().padLeft(2, '0');
@@ -56,6 +82,14 @@ class _ExplorePageState extends State<ExplorePage> {
       _futureEvents = EventsApi.fetchAll();
     });
     await _futureEvents;
+  }
+
+  String _prettyCategoryLabel(String c) {
+    final t = c.trim();
+    if (t.isEmpty) return c;
+    if (t.toLowerCase() == "all") return "All";
+    return t[0].toUpperCase() + t.substring(1);
+    // (keeps backend values lowercase but shows friendly labels)
   }
 
   @override
@@ -93,20 +127,38 @@ class _ExplorePageState extends State<ExplorePage> {
               ),
             ),
 
-            // ---------- FILTER CHIPS (UI only for now) ----------
+            // ---------- CATEGORY FILTER CHIPS ----------
             SizedBox(
               height: 48,
-              child: ListView(
+              child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: const [
-                  _FilterChip(label: "Today"),
-                  _FilterChip(label: "This Week"),
-                  _FilterChip(label: "Music"),
-                  _FilterChip(label: "Art"),
-                  _FilterChip(label: "Free"),
-                  _FilterChip(label: "Nearby"),
-                ],
+                itemCount: _categories.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, i) {
+                  final cat = _categories[i];
+
+                  // ✅ Fix selection logic:
+                  // - "All" is selected when _selectedCategory == null
+                  // - otherwise match actual category
+                  final isSelected = (cat == "All" && _selectedCategory == null) ||
+                      (_selectedCategory != null && _selectedCategory == cat);
+
+                  return ChoiceChip(
+                    label: Text(_prettyCategoryLabel(cat)),
+                    selected: isSelected,
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedCategory = (cat == "All") ? null : cat;
+                      });
+                    },
+                    selectedColor: Colors.orange.shade200,
+                    backgroundColor: Colors.grey.shade200,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  );
+                },
               ),
             ),
 
@@ -120,6 +172,7 @@ class _ExplorePageState extends State<ExplorePage> {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
+
                   if (snap.hasError) {
                     return Center(
                       child: Padding(
@@ -144,16 +197,31 @@ class _ExplorePageState extends State<ExplorePage> {
                   }
 
                   final events = snap.data ?? const <EventModel>[];
-                  final results = _filter(events);
+
+                  // ✅ Optional: stable ordering so UI doesn't feel random
+                  final ordered = events.toList()
+                    ..sort((a, b) => a.startDate.compareTo(b.startDate));
+
+                  final results = _filter(ordered);
 
                   if (results.isEmpty) {
+                    final q = _query.trim();
+                    final cat = _selectedCategory;
+
+                    String msg = "No events found.";
+                    if (cat != null && cat.isNotEmpty && q.isNotEmpty) {
+                      msg = 'No results for "$q" in ${_prettyCategoryLabel(cat)}.';
+                    } else if (cat != null && cat.isNotEmpty) {
+                      msg = 'No events in ${_prettyCategoryLabel(cat)}.';
+                    } else if (q.isNotEmpty) {
+                      msg = 'No results for "$q".';
+                    }
+
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text(
-                          _query.trim().isEmpty
-                              ? "No events found."
-                              : 'No results for "${_query.trim()}".',
+                          msg,
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.grey),
                         ),
@@ -170,7 +238,6 @@ class _ExplorePageState extends State<ExplorePage> {
                         final e = results[index];
 
                         return ExploreEventCard(
-                          // ✅ IMPORTANT: MongoDB real ObjectId string (fixes booking)
                           eventId: e.id,
                           title: e.displayTitle,
                           date: _formatDate(e.startDate),
@@ -186,23 +253,6 @@ class _ExplorePageState extends State<ExplorePage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  const _FilterChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      child: Chip(
-        label: Text(label),
-        backgroundColor: Colors.grey.shade200,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -232,7 +282,7 @@ class ExploreEventCard extends StatelessWidget {
       onTap: () {
         goToEventDetails(
           context: context,
-          eventId: eventId, // ✅ real ObjectId
+          eventId: eventId,
           name: title,
           date: date,
           location: location,

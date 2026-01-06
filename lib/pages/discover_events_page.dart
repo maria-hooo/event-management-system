@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'profile.dart'; // make sure this path is correct in your project
+import 'profile.dart';
 import '../utils/event_navigation.dart';
 import '../services/events_api.dart';
 import '../models/event_model.dart';
@@ -18,10 +18,7 @@ class DiscoverEventsPage extends StatefulWidget {
 }
 
 class _DiscoverEventsPageState extends State<DiscoverEventsPage> {
-  // criteria #1
   String? _selectedCategory;
-
-  // criteria #2 (null = all)
   bool? _isPublic;
 
   void _openProfile(BuildContext context) {
@@ -48,41 +45,36 @@ class _DiscoverEventsPageState extends State<DiscoverEventsPage> {
                 onProfileTap: widget.onProfileTap ?? () => _openProfile(context),
               ),
               const SizedBox(height: 24),
-              const _SearchBar(),
-              const SizedBox(height: 28),
-              const _SectionHeader(title: "🔥 Featured Events"),
-              const SizedBox(height: 16),
-              _FeaturedCarousel(),
-              const SizedBox(height: 28),
-              const _SectionHeader(title: "🎤 Popular Events"),
-              const SizedBox(height: 16),
-              _PopularEvents(
+
+              // SECTION 1: Featured
+              const _SectionIntro(
+                title: "Featured events",
+                description: "Handpicked events you should not miss.",
+              ),
+              const SizedBox(height: 12),
+              _FeaturedEvents(
                 selectedCategory: _selectedCategory,
                 isPublic: _isPublic,
               ),
+
               const SizedBox(height: 28),
-              const _SectionHeader(title: "📅 Upcoming Events"),
-              const SizedBox(height: 16),
+
+              // SECTION 2: Upcoming
+              const _SectionIntro(
+                title: "Upcoming events",
+                description: "What is happening soon, sorted by date.",
+              ),
+              const SizedBox(height: 12),
               _UpcomingEvents(
                 selectedCategory: _selectedCategory,
                 isPublic: _isPublic,
               ),
-              const SizedBox(height: 28),
-              const _SectionHeader(title: "🎨 Categories"),
-              const SizedBox(height: 16),
-              _Categories(
-                selectedCategory: _selectedCategory,
-                isPublic: _isPublic,
-                onCategoryChanged: (v) => setState(() => _selectedCategory = v),
-                onPublicChanged: (v) => setState(() => _isPublic = v),
-              ),
+
               const SizedBox(height: 32),
             ],
           ),
         ),
       ),
-      // Optional: if you want it visible
-      // bottomNavigationBar: const _BottomNav(),
     );
   }
 }
@@ -128,16 +120,15 @@ class _Header extends StatelessWidget {
                 onTap: onProfileTap,
                 child: const CircleAvatar(
                   radius: 18,
-                  // NOTE: Some networks block this URL on web sometimes.
-                  // If it fails, replace with a local asset or another URL.
-                  backgroundImage: NetworkImage("https://i.pravatar.cc/150"),
+                  backgroundColor: Colors.white12,
+                  child: Icon(Icons.person, color: Colors.white),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
           const Text(
-            "Hello 👋",
+            "Hello",
             style: TextStyle(color: Colors.white70),
           ),
           const SizedBox(height: 6),
@@ -155,54 +146,31 @@ class _Header extends StatelessWidget {
   }
 }
 
-/* ---------------- SEARCH ---------------- */
-class _SearchBar extends StatelessWidget {
-  const _SearchBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, 6))
-          ],
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.search, color: Colors.grey),
-            SizedBox(width: 10),
-            Text("Find amazing events", style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/* ---------------- SECTION HEADER ---------------- */
-class _SectionHeader extends StatelessWidget {
+/* ---------------- SECTION INTRO ---------------- */
+class _SectionIntro extends StatelessWidget {
   final String title;
-  const _SectionHeader({required this.title});
+  final String description;
+
+  const _SectionIntro({
+    required this.title,
+    required this.description,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const Spacer(),
-          const Text(
-            "View All",
-            style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w600),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: const TextStyle(color: Colors.black54),
           ),
         ],
       ),
@@ -210,41 +178,15 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-/* ---------------- FEATURED CAROUSEL ---------------- */
-class _FeaturedCarousel extends StatelessWidget {
-  _FeaturedCarousel();
+/* ---------------- HELPERS ---------------- */
+String _dateOnly(DateTime dt) => dt.toLocal().toString().split(' ').first;
 
-  final List<String> images = const [
-    "https://picsum.photos/600/300?1",
-    "https://picsum.photos/600/300?2",
-    "https://picsum.photos/600/300?3",
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 180,
-      child: PageView.builder(
-        controller: PageController(viewportFraction: 0.85),
-        itemCount: images.length,
-        itemBuilder: (_, index) => Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.network(images[index], fit: BoxFit.cover),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/* ---------------- POPULAR EVENTS ---------------- */
-class _PopularEvents extends StatelessWidget {
+/* ---------------- FEATURED EVENTS ---------------- */
+class _FeaturedEvents extends StatelessWidget {
   final String? selectedCategory;
   final bool? isPublic;
 
-  const _PopularEvents({this.selectedCategory, this.isPublic});
+  const _FeaturedEvents({this.selectedCategory, this.isPublic});
 
   @override
   Widget build(BuildContext context) {
@@ -259,12 +201,13 @@ class _PopularEvents extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         }
+
         if (snap.hasError) {
           return SizedBox(
             height: 260,
             child: Center(
               child: Text(
-                "Failed to load events:\n${snap.error}",
+                "Failed to load featured events\n${snap.error}",
                 style: const TextStyle(color: Colors.black54),
                 textAlign: TextAlign.center,
               ),
@@ -272,12 +215,17 @@ class _PopularEvents extends StatelessWidget {
           );
         }
 
+        // This is still "first N events" until backend gives a true featured flag
         final events = (snap.data ?? []).take(10).toList();
+
         if (events.isEmpty) {
           return const SizedBox(
             height: 260,
             child: Center(
-              child: Text("No events found", style: TextStyle(color: Colors.black54)),
+              child: Text(
+                "No featured events right now",
+                style: TextStyle(color: Colors.black54),
+              ),
             ),
           );
         }
@@ -291,10 +239,11 @@ class _PopularEvents extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 14),
             itemBuilder: (_, index) {
               final e = events[index];
+              final dateStr = _dateOnly(e.startDate);
 
               return _EventCard(
                 name: e.displayTitle,
-                date: "${e.startDate.toLocal()}".split(".").first,
+                date: dateStr,
                 location: e.location,
                 price: e.price.toStringAsFixed(0),
                 image: e.imageUrl,
@@ -303,7 +252,7 @@ class _PopularEvents extends StatelessWidget {
                     context: context,
                     eventId: e.id,
                     name: e.displayTitle,
-                    date: "${e.startDate.toLocal()}".split(".").first,
+                    date: dateStr,
                     location: e.location,
                     imageUrl: e.imageUrl,
                     price: e.price.toStringAsFixed(0),
@@ -340,12 +289,13 @@ class _UpcomingEvents extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         }
+
         if (snap.hasError) {
           return SizedBox(
             height: 160,
             child: Center(
               child: Text(
-                "Failed to load events:\n${snap.error}",
+                "Failed to load upcoming events\n${snap.error}",
                 style: const TextStyle(color: Colors.black54),
                 textAlign: TextAlign.center,
               ),
@@ -360,13 +310,18 @@ class _UpcomingEvents extends StatelessWidget {
           return const SizedBox(
             height: 160,
             child: Center(
-              child: Text("No upcoming events", style: TextStyle(color: Colors.black54)),
+              child: Text(
+                "No upcoming events",
+                style: TextStyle(color: Colors.black54),
+              ),
             ),
           );
         }
 
         return Column(
           children: events.take(6).map((e) {
+            final dateStr = _dateOnly(e.startDate);
+
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: ListTile(
@@ -374,21 +329,32 @@ class _UpcomingEvents extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(e.imageUrl, width: 56, height: 56, fit: BoxFit.cover),
+                  child: Image.network(
+                    e.imageUrl,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 56,
+                      height: 56,
+                      color: Colors.black12,
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.image_not_supported),
+                    ),
+                  ),
                 ),
                 title: Text(e.displayTitle, style: const TextStyle(color: Colors.black)),
-                subtitle: Text(
-                  "${e.startDate.toLocal()}".split(".").first,
-                  style: const TextStyle(color: Colors.black54),
+                subtitle: Text(dateStr, style: const TextStyle(color: Colors.black54)),
+                trailing: Text(
+                  "\$${e.price.toStringAsFixed(0)}",
+                  style: const TextStyle(color: Colors.black),
                 ),
-                trailing: Text("\$${e.price.toStringAsFixed(0)}",
-                    style: const TextStyle(color: Colors.black)),
                 onTap: () {
                   goToEventDetails(
                     context: context,
                     eventId: e.id,
                     name: e.displayTitle,
-                    date: "${e.startDate.toLocal()}".split(".").first,
+                    date: dateStr,
                     location: e.location,
                     imageUrl: e.imageUrl,
                     price: e.price.toStringAsFixed(0),
@@ -405,88 +371,7 @@ class _UpcomingEvents extends StatelessWidget {
   }
 }
 
-/* ---------------- CATEGORIES / FILTERS ---------------- */
-class _Categories extends StatelessWidget {
-  final String? selectedCategory;
-  final bool? isPublic;
-  final ValueChanged<String?> onCategoryChanged;
-  final ValueChanged<bool?> onPublicChanged;
-
-  const _Categories({
-    required this.selectedCategory,
-    required this.isPublic,
-    required this.onCategoryChanged,
-    required this.onPublicChanged,
-  });
-
-  // Must match backend enum: ["music","sports","tech","art","business"]
-  static const List<Map<String, String>> _cats = [
-    {"label": "All", "value": ""},
-    {"label": "Music", "value": "music"},
-    {"label": "Sports", "value": "sports"},
-    {"label": "Tech", "value": "tech"},
-    {"label": "Art", "value": "art"},
-    {"label": "Business", "value": "business"},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          height: 44,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            scrollDirection: Axis.horizontal,
-            itemCount: _cats.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (_, index) {
-              final c = _cats[index];
-              final v = c["value"]!;
-              final isSelected =
-                  (v.isEmpty && selectedCategory == null) || selectedCategory == v;
-
-              return ChoiceChip(
-                label: Text(c["label"]!),
-                selected: isSelected,
-                onSelected: (_) => onCategoryChanged(v.isEmpty ? null : v),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: [
-              const Text("Visibility:", style: TextStyle(color: Colors.black54)),
-              const SizedBox(width: 12),
-              ChoiceChip(
-                label: const Text("All"),
-                selected: isPublic == null,
-                onSelected: (_) => onPublicChanged(null),
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text("Public"),
-                selected: isPublic == true,
-                onSelected: (_) => onPublicChanged(true),
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text("Private"),
-                selected: isPublic == false,
-                onSelected: (_) => onPublicChanged(false),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/* ---------------- EVENT CARD (was missing in your file) ---------------- */
+/* ---------------- EVENT CARD ---------------- */
 class _EventCard extends StatelessWidget {
   final String name;
   final String date;
@@ -574,24 +459,6 @@ class _EventCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/* ---------------- OPTIONAL BOTTOM NAV ---------------- */
-class _BottomNav extends StatelessWidget {
-  const _BottomNav({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return NavigationBar(
-      height: 64,
-      destinations: const [
-        NavigationDestination(icon: Icon(Icons.home), label: ""),
-        NavigationDestination(icon: Icon(Icons.calendar_today), label: ""),
-        NavigationDestination(icon: Icon(Icons.bookmark), label: ""),
-        NavigationDestination(icon: Icon(Icons.person), label: ""),
-      ],
     );
   }
 }

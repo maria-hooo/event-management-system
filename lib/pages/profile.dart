@@ -5,9 +5,9 @@ import 'manage_organizers_page.dart';
 import 'manage_tickets_page.dart';
 
 class ProfilePage extends StatelessWidget {
-  final VoidCallback? onBack; // <-- new
+  final VoidCallback? onBack;
 
-  const ProfilePage({super.key, this.onBack}); // <-- new
+  const ProfilePage({super.key, this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class ProfilePage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: onBack, // <-- call the callback instead of Navigator.pop
+          onPressed: onBack ?? () => Navigator.pop(context),
         ),
         title: const Text(
           "Profile",
@@ -39,9 +39,7 @@ class ProfilePage extends StatelessWidget {
                   children: [
                     const CircleAvatar(
                       radius: 40,
-                      backgroundImage: NetworkImage(
-                        "https://i.pravatar.cc/150",
-                      ),
+                      backgroundImage: NetworkImage("https://i.pravatar.cc/150"),
                     ),
                     const SizedBox(width: 20),
                     Expanded(
@@ -62,56 +60,6 @@ class ProfilePage extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // --- SAVED / FAVORITE EVENTS ---
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: SectionHeader(title: "Saved Events ⭐"),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 220,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: [
-                    EventCard(
-                      name: "EDM Party",
-                      date: "10 Feb",
-                      location: "Amsterdam",
-                      imageUrl: "https://picsum.photos/400/300?5",
-                      onTap: () {
-                        goToEventDetails(
-                          context: context,
-                          name: "EDM Party",
-                          date: "10 Feb",
-                          location: "Amsterdam",
-                          imageUrl: "https://picsum.photos/400/300?5",
-                          price: "50",
-                        );
-                      },
-                    ),
-                    EventCard(
-                      name: "Art & Music Fest",
-                      date: "22 Feb",
-                      location: "Paris",
-                      imageUrl: "https://picsum.photos/400/300?6",
-                      onTap: () {
-                        goToEventDetails(
-                          context: context,
-                          name: "Art & Music Fest",
-                          date: "22 Feb",
-                          location: "Paris",
-                          imageUrl: "https://picsum.photos/400/300?6",
-                          price: "70",
-                        );
-                      },
                     ),
                   ],
                 ),
@@ -188,101 +136,6 @@ class ProfilePage extends StatelessWidget {
 }
 
 /// --- HELPER WIDGETS ---
-
-class SectionHeader extends StatelessWidget {
-  final String title;
-  const SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const Spacer(),
-        const Text(
-          "View All",
-          style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w600),
-        ),
-      ],
-    );
-  }
-}
-
-class EventCard extends StatelessWidget {
-  final String name;
-  final String date;
-  final String location;
-  final String imageUrl;
-  final VoidCallback? onTap; // <-- new
-
-  const EventCard({
-    required this.name,
-    required this.date,
-    required this.location,
-    required this.imageUrl,
-    this.onTap, // <-- new
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap, // <-- calls navigation
-      child: Container(
-        width: 180,
-        margin: const EdgeInsets.only(right: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Colors.white,
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 12)],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Image.network(
-                imageUrl,
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    date,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                  Text(
-                    location,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class ProfileButton extends StatelessWidget {
   final String label;
