@@ -1,42 +1,70 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'api_config.dart';
 
+/// Central place to change base URL.
+/// If you run on Android emulator, use: http://10.0.2.2:3000
+/// If you run on iOS simulator, use: http://127.0.0.1:3000
+/// If you run on web, use: http://localhost:3000
 class ApiClient {
-  static Uri _u(String path, [Map<String, String>? query]) {
-    final base = ApiConfig.baseUrl;
-    return Uri.parse('$base$path').replace(queryParameters: query);
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://10.0.2.2:3000',
+  );
+
+  static Uri uri(String path, [Map<String, dynamic>? query]) {
+    return Uri.parse('$baseUrl$path').replace(
+      queryParameters: query?.map((k, v) => MapEntry(k, v.toString())),
+    );
   }
 
-  static Future<List<dynamic>> getList(String path, {Map<String, String>? query}) async {
-    final res = await http.get(_u(path, query));
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return jsonDecode(res.body) as List<dynamic>;
+  static Future<dynamic> getJson(Uri url) async {
+    final res = await http.get(url);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('GET $url failed: ${res.statusCode} ${res.body}');
     }
-    throw Exception('GET $path failed: ${res.statusCode} ${res.body}');
+    return jsonDecode(res.body);
   }
 
-  static Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) async {
+  static Future<dynamic> postJson(Uri url, Map<String, dynamic> body) async {
     final res = await http.post(
-      _u(path),
+      url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(body),
     );
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('POST $url failed: ${res.statusCode} ${res.body}');
     }
-    throw Exception('POST $path failed: ${res.statusCode} ${res.body}');
+    return jsonDecode(res.body);
   }
 
-  static Future<Map<String, dynamic>> put(String path, Map<String, dynamic> body) async {
+  static Future<dynamic> putJson(Uri url, Map<String, dynamic> body) async {
     final res = await http.put(
-      _u(path),
+      url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(body),
     );
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('PUT $url failed: ${res.statusCode} ${res.body}');
     }
-    throw Exception('PUT $path failed: ${res.statusCode} ${res.body}');
+    return jsonDecode(res.body);
+  }
+
+  static Future<dynamic> patchJson(Uri url, Map<String, dynamic> body) async {
+    final res = await http.patch(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('PATCH $url failed: ${res.statusCode} ${res.body}');
+    }
+    return jsonDecode(res.body);
+  }
+
+  static Future<void> deleteJson(Uri url) async {
+    final res = await http.delete(url);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('DELETE $url failed: ${res.statusCode} ${res.body}');
+    }
   }
 }

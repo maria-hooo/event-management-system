@@ -1,22 +1,22 @@
 class Organizer {
   final String id;
-  final String orgName;
-  final String phone;
+  final String name;
+  final String? phone;
+  final String? email;
 
-  Organizer({required this.id, required this.orgName, required this.phone});
+  Organizer({
+    required this.id,
+    required this.name,
+    this.phone,
+    this.email,
+  });
 
   factory Organizer.fromJson(Map<String, dynamic> json) {
     return Organizer(
-      id: json['_id']?.toString() ?? '',
-      orgName: json['orgName']?.toString() ?? '',
-      phone: json['phone']?.toString() ?? '',
+      id: json['_id'] as String,
+      name: (json['name'] ?? json['orgName'] ?? '') as String,
+      phone: json['phone'] as String?,
+      email: json['email'] as String?,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'orgName': orgName,
-      'phone': phone,
-    };
   }
 }
